@@ -104,7 +104,7 @@ class Arena : private utils::NonCopyable {
    private:
     /*******内存块存储 */
     // 内联块（初始小分配使用）
-    alignas(std::max_align_t) char inline_block_[kInlineSize];
+    alignas(N) char inline_block_[kInlineSize];
     // Number of bytes allocated in one block
     // 调整后的标准块大小
     const size_t kBlockSize;

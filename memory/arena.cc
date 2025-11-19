@@ -31,7 +31,7 @@ Arena<N>::Arena(size_t block_size, AllocTracker* tracker, size_t huge_page_size)
     aligned_alloc_ptr_ = inline_block_;
     // 不对齐侧指向了高地址
     unaligned_alloc_ptr_ = inline_block_ + alloc_bytes_remaining_;
-    if constexpr (memmap::MemMapping::kHugePageSupported) {
+    if constexpr (port::MemMapping::kHugePageSupported) {
         hugetlb_size_ = huge_page_size;
         if (hugetlb_size_ && kBlockSize > hugetlb_size_) {
             // 针对kBlockSize，则需要安装大页对齐
@@ -94,7 +94,7 @@ char* Arena<N>::AllocateFallback(size_t bytes, bool aligned) {
     // We waste the remaining space in the current block.
     size_t size = 0;
     char* block_head = nullptr;
-    if (memmap::MemMapping::kHugePageSupported && hugetlb_size_ > 0) {
+    if (port::MemMapping::kHugePageSupported && hugetlb_size_ > 0) {
         size = hugetlb_size_;
         block_head = AllocateFromHugePage(size);
     }
@@ -116,7 +116,7 @@ char* Arena<N>::AllocateFallback(size_t bytes, bool aligned) {
 }
 
 char* Arena<NGROUPS_MAX>::AllocateFromHugePage(size_t bytes) {
-    memmap::MemMapping mm = memmap::MemMapping::AllocateHuge(bytes);
+    port::MemMapping mm = port::MemMapping::AllocateHuge(bytes);
     auto addr = static_cast<char*>(mm.Get());
     if (addr) {
         huge_blocks_.push_back(std::move(mm));
@@ -130,18 +130,19 @@ char* Arena<NGROUPS_MAX>::AllocateFromHugePage(size_t bytes) {
 
 char* Arena<N>::AllocateAligned(size_t bytes, size_t huge_page_size,
                                 log::Logger* logger) {
-    if (memmap::MemMapping::kHugePageSupported && hugetlb_size_ > 0 &&
-        huge_page_size > 0 && bytes > 0) {
+    assert(bytes > 0);
+    if (port::MemMapping::kHugePageSupported && hugetlb_size_ > 0 &&
+        huge_page_size > 0) {
         // Allocate from a huge page TLB table.
         size_t reserved_size =
             ((bytes - 1U) / huge_page_size + 1U) * huge_page_size;
-        assert(reserved_size >= bytes);
 
         char* addr = AllocateFromHugePage(reserved_size);
         if (addr == nullptr) {
             LOG_WARN(logger,
                      "AllocateAligned fail to allocate huge TLB pages: %s",
                      utils::errnoStr(errno).c_str());
+            //utils::errnoStr(errno)生成的临时对象在语句结束后就销毁。
             // fail back to malloc
         } else {
             return addr;
@@ -160,7 +161,6 @@ char* Arena<N>::AllocateAligned(size_t bytes, size_t huge_page_size,
         // AllocateFallback always returns aligned memory
         result = AllocateFallback(bytes, true /* aligned */);
     }
-    assert((reinterpret_cast<uintptr_t>(result) & (kAlignUnit - 1)) == 0);
     return result;
 }
 

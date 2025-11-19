@@ -2,7 +2,7 @@
 #include <sys/mman.h>
 #include <cstring>
 
-namespace utils::memmap {
+namespace utils::port {
 class MemMapping {
    public:
     static constexpr bool kHugePageSupported =
@@ -160,4 +160,4 @@ class TypedMemMapping : public MemMapping {
     inline T& operator[](size_t index) const { return Get()[index]; }
 };
 
-}  // namespace utils::memmap
+}  // namespace utils::port
