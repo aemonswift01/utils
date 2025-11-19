@@ -4,12 +4,18 @@
 // https://zhuanlan.zhihu.com/p/1931120499179647603
 
 #include <cstddef>
+#include <type_traits>
 
 // AnyType可以转换成任意类型
 struct AnyType {
     template <typename T>
+        requires(!std::is_array_v<T>)
     operator T();  // 即AnyType类型转为T类型操作符。
 };
+
+/*
+  requires(!std::is_array_v<T>)  // 不能是C数组方式，因为会和聚合初始化冲突
+*/
 
 // 获取能够进行聚合初始化类的成员变量个数
 template <typename T>
