@@ -10,9 +10,10 @@ namespace utils::utils {
 
 Random* Random::GetTLSInstance() {
     STORAGE_DECL Random* tls_instance;
-    STORAGE_DECL aligned_storage<Random>::type tls_instance_bytes;
+    STORAGE_DECL utils::AlignedMemory<sizeof(Random), alignof(Random)>
+        tls_instance_bytes;
 
-    auto rv = tls_instance;
+    auto rv = tls_instance;  //discard static/ thread_local
     if (UNLIKELY(rv == nullptr)) {
         size_t seed = std::hash<std::thread::id>()(std::this_thread::get_id());
         rv = new (&tls_instance_bytes) Random((uint32_t)seed);

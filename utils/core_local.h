@@ -6,10 +6,13 @@
 #include <vector>
 
 #include "port/likely.h"
+#include "utils/math.h"
+#include "utils/random.h"
 
 namespace utils::utils {
 
 // 核心本地值的数组。理想情况下，值类型 T 应按缓存行对齐，以防止伪共享（false sharing）。
+// 分配一个大数组，cpuid的索引映射到数组的索引，从而得到cpu本地存储的内容
 template <typename T>
 class CoreLocalArray {
    public:
@@ -81,4 +84,4 @@ T* CoreLocalArray<T>::AccessAtCore(size_t core_idx) const {
     assert(core_idx < static_cast<size_t>(1) << size_shift_);
     return &data_[core_idx];
 }
-}
+}  // namespace utils::utils
